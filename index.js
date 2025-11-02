@@ -4,11 +4,12 @@ const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const app = express();
 const port = process.env.PORT || 3000;
 
+// middleware
 app.use(cors());
 app.use(express.json());
 
 const uri =
-  "mongodb+srv://simpleDBUser:4YB0cNuMWV8m5loq@cluster0.3kkgkzf.mongodb.net/?appName=Cluster0";
+  "mongodb+srv://smartdbUser:JOFV2xVJ1Ri6UmrT@cluster0.vyznij5.mongodb.net/?appName=Cluster0";
 
 const client = new MongoClient(uri, {
   serverApi: {
@@ -19,7 +20,7 @@ const client = new MongoClient(uri, {
 });
 
 app.get("/", (req, res) => {
-  res.send("Simple Deals is running");
+  res.send("Smart server is running");
 });
 
 async function run() {
@@ -27,10 +28,38 @@ async function run() {
     await client.connect();
 
     const db = client.db("smart_db");
-    const productCollection = db.collection("products");
+    const productsCollection = db.collection("products");
+    const bidsCollection = db.collection("bids");
+    const usersCollection = db.collection("users");
+
+    app.post("/users", async (req, res) => {
+      const newUser = req.body;
+      const email = req.body.email;
+      const query = { email: email };
+      const existingUser = await usersCollection.findOne(query);
+
+      if (existingUser) {
+        res.send({
+          message: "user already exits. do not need to insert again",
+        });
+      } else {
+        const result = await usersCollection.insertOne(newUser);
+        res.send(result);
+      }
+    });
 
     app.get("/products", async (req, res) => {
-      const cursor = productCollection.find();
+      // const projectFields = { title: 1, price_min: 1, price_max: 1, image: 1 }
+      // const cursor = productsCollection.find().sort({ price_min: -1 }).skip(2).limit(2).project(projectFields);
+
+      console.log(req.query);
+      const email = req.query.email;
+      const query = {};
+      if (email) {
+        query.email = email;
+      }
+
+      const cursor = productsCollection.find(query);
       const result = await cursor.toArray();
       res.send(result);
     });
@@ -38,35 +67,54 @@ async function run() {
     app.get("/products/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
-      const result = await productCollection.findOne(query);
+      const result = await productsCollection.findOne(query);
       res.send(result);
     });
 
     app.post("/products", async (req, res) => {
       const newProduct = req.body;
-      const result = await productCollection.insertOne(newProduct);
+      const result = await productsCollection.insertOne(newProduct);
       res.send(result);
     });
 
     app.patch("/products/:id", async (req, res) => {
       const id = req.params.id;
-      const updateProduct = req.body;
+      const updatedProduct = req.body;
       const query = { _id: new ObjectId(id) };
       const update = {
         $set: {
-          name: updateProduct.name,
-          price: updateProduct.price,
+          name: updatedProduct.name,
+          price: updatedProduct.price,
         },
       };
-      const options = {};
-      const result = await productCollection.updateOne(query, update, options);
+
+      const result = await productsCollection.updateOne(query, update);
       res.send(result);
     });
 
     app.delete("/products/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
-      const result = await productCollection.deleteOne(query);
+      const result = await productsCollection.deleteOne(query);
+      res.send(result);
+    });
+
+    // bids related apis
+    app.get("/bids", async (req, res) => {
+      const email = req.query.email;
+      const query = {};
+      if (email) {
+        query.buyer_email = email;
+      }
+
+      const cursor = bidsCollection.find(query);
+      const result = await cursor.toArray();
+      res.send(result);
+    });
+
+    app.post("/bids", async (req, res) => {
+      const newBid = req.body;
+      const result = await bidsCollection.insertOne(newBid);
       res.send(result);
     });
 
@@ -75,11 +123,7 @@ async function run() {
       "Pinged your deployment. You successfully connected to MongoDB!"
     );
   } finally {
-    // await client.close();
   }
 }
-run().catch(console.dir);
 
-app.listen(port, () => {
-  console.log(`Simple Deals on port ${port}`);
-});
+run().catch(console.dir);

@@ -138,7 +138,7 @@ async function run() {
       res.send(result);
     });
 
-    app.post("/products", async (req, res) => {
+    app.post("/products", verifyFireBaseToken, async (req, res) => {
       const newProduct = req.body;
       const result = await productsCollection.insertOne(newProduct);
       res.send(result);
@@ -167,8 +167,8 @@ async function run() {
     });
 
     // bids related apis
-    // app.get("/bids", logger, verifyFireBaseToken, async (req, res) => {
-    app.get("/bids", verifyJWTToken, async (req, res) => {
+    app.get("/bids", verifyFireBaseToken, async (req, res) => {
+    // app.get("/bids", verifyJWTToken, async (req, res) => {
       const email = req.query.email;
       const query = {};
       if (email) {

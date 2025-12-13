@@ -17,10 +17,6 @@ admin.initializeApp({
 app.use(cors());
 app.use(express.json());
 
-const logger = (req, res, next) => {
-  console.log("Login information");
-  next();
-};
 
 const verifyFireBaseToken = async (req, res, next) => {
   if (!req.headers.authorization) {
@@ -34,7 +30,7 @@ const verifyFireBaseToken = async (req, res, next) => {
   try {
     const userInfo = await admin.auth().verifyIdToken(token);
     req.token_email = userInfo.email;
-    // console.log("after token validation", userInfo);
+
     next();
   } catch {
     return res.status(401).send({ message: "unauthorized access" });
@@ -56,8 +52,6 @@ const verifyJWTToken = (req, res, next) => {
     if (err) {
       return res.status(401).send({ message: "unauthorized access" });
     }
-    // put it in the right place
-    console.log("after decoded", decoded);
     req.token_email = decoded.email;
     next();
   });
@@ -168,7 +162,6 @@ async function run() {
 
     // bids related apis
     app.get("/bids", verifyFireBaseToken, async (req, res) => {
-    // app.get("/bids", verifyJWTToken, async (req, res) => {
       const email = req.query.email;
       const query = {};
       if (email) {
